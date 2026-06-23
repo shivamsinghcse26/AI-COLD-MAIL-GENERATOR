@@ -39,9 +39,20 @@ const app = express();
 app.use(helmet());
 app.use(cookieParser());
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  process.env.FRONTEND_URL
+];
+
 app.use(cors({
-    origin: true,
-    credentials: true
+  origin: function(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true
 }));
 
 // Rate Limiting Middleware
@@ -95,7 +106,7 @@ app.get( (req, res,next) => {
 
 app.use((err, req, res, next) => {
     console.error(err.stack);
-    const isDev = process.env.NODE_ENV === 'development';
+    
     res.status(500).json({ 
         message: 'Server Error',
         error: isDev ? err.message : null
