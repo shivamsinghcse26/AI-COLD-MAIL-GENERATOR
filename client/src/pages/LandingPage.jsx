@@ -1,10 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import { ArrowRightIcon, BoltIcon, ChartBarIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
+import { useSelector } from "react-redux";
+
+
 
 const LandingPage = () => {
-    const { user } = useAuth();
+   const { user, isAuthenticated } = useSelector(
+  (state) => state.auth
+);
 
     const features = [
         {
@@ -36,7 +40,7 @@ const LandingPage = () => {
                             </span>
                         </div>
                         <div className="flex items-center space-x-4">
-                            {user ? (
+                            {isAuthenticated ? (
                                 <Link
                                     to="/dashboard"
                                     className="inline-flex items-center justify-center px-6 py-2.5 border border-transparent text-sm font-medium rounded-full text-white bg-primary-600 hover:bg-primary-700 hover:shadow-lg hover:shadow-primary-500/30 transition-all duration-200"
@@ -80,7 +84,7 @@ const LandingPage = () => {
                     </p>
                     <div className="mt-10 flex justify-center gap-x-6">
                         <Link
-                            to={user ? "/dashboard" : "/signup"}
+                            to={isAuthenticated ? "/dashboard" : "/signup"}
                             className="group inline-flex items-center justify-center px-8 py-4 text-base font-semibold rounded-full text-white bg-gray-900 hover:bg-gray-800 hover:scale-105 transition-all duration-200"
                         >
                             Start Generating for Free

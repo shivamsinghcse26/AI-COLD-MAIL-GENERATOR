@@ -1,76 +1,101 @@
-import React, { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { toast } from 'react-hot-toast';
-import api from '../utils/api';
-import { useAuth } from '../context/AuthContext';
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
+import { useSelector, useDispatch } from "react-redux";
+import { verifyOtp, clearError } from "../redux/authSlice";
 
 const VerifyOtp = () => {
-    const [otp, setOtp] = useState('');
-    const [loading, setLoading] = useState(false);
-    const location = useLocation();
-    const navigate = useNavigate();
-    const { login } = useAuth();
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
-    const userId = location.state?.userId;
-    const email = location.state?.email;
+  const {
+    otpPending,
+    pendingEmail,
+    isAuthenticated,
+    loading,
+    error,
+  } = useSelector((state) => state.auth);
 
-    if (!userId) {
-        navigate('/signup');
-        return null;
+  const [otp, setOtp] = useState("");
+
+  // handle redirect logic
+  useEffect(() => {
+    if (isAuthenticated) {
+      toast.success("Email verified successfully");
+      navigate("/dashboard");
+    } else if (!otpPending) {
+      navigate("/signup");
     }
+  }, [isAuthenticated, otpPending, navigate]);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        try {
-            const { data } = await api.post('/auth/verify-otp', { userId, otp });
-            login(data);
-            toast.success('Email verified successfully!');
-            navigate('/dashboard');
-        } catch (error) {
-            toast.error(error.response?.data?.message || 'Verification failed');
-        } finally {
-            setLoading(false);
-        }
-    };
+  // show backend errors
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      dispatch(clearError());
+    }
+  }, [error, dispatch]);
 
-    return (
-        <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-            <div className="sm:mx-auto sm:w-full sm:max-w-md">
-                <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Verify your email</h2>
-                <p className="mt-2 text-center text-sm text-gray-600">
-                    We sent a code to <span className="font-medium text-gray-900">{email}</span>
-                </p>
-            </div>
+  // submit otp
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-            <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-                <div className="bg-white py-8 px-4 shadow-sm border border-gray-100 sm:rounded-xl sm:px-10">
-                    <form className="space-y-6" onSubmit={handleSubmit}>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 text-center mb-2">Enter 6-digit OTP</label>
-                            <input
-                                type="text"
-                                required
-                                maxLength={6}
-                                value={otp}
-                                onChange={(e) => setOtp(e.target.value)}
-                                className="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-center text-2xl tracking-widest font-mono"
-                                placeholder="000000"
-                            />
-                        </div>
+    try {
+      await dispatch(
+        verifyOtp({
+          email: pendingEmail,
+          otp,
+        })
+      ).unwrap();
+    } catch (err) {
+      // redux handles error
+    }
+  };
 
-                        <button
-                            type="submit"
-                            disabled={loading || otp.length !== 6}
-                            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
-                        >
-                            {loading ? 'Verifying...' : 'Verify Email'}
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    );
+  return (
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="w-full max-w-md bg-white p-8 rounded-xl shadow">
+
+        <h2 className="text-2xl font-bold text-center mb-2">
+          Verify Email
+        </h2>
+
+        <p className="text-center text-gray-600 mb-6">
+          OTP sent to{" "}
+          <span className="font-semibold">
+            {pendingEmail}
+          </span>
+        </p>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+
+          <input
+            type="text"
+            maxLength={6}
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={otp}
+            onChange={(e) => {
+              const value = e.target.value.replace(/\D/g, "");
+              setOtp(value);
+            }}
+            placeholder="Enter 6 digit OTP"
+            required
+            className="w-full border p-3 rounded text-center text-xl tracking-widest"
+          />
+
+          <button
+            type="submit"
+            disabled={loading || otp.length !== 6}
+            className="w-full bg-blue-600 text-white p-3 rounded disabled:opacity-50"
+          >
+            {loading ? "Verifying..." : "Verify OTP"}
+          </button>
+
+        </form>
+      </div>
+    </div>
+  );
 };
 
 export default VerifyOtp;

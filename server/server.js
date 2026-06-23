@@ -4,10 +4,13 @@ const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const dotenv = require('dotenv');
 const path = require('path');
-
+const cookieParser = require('cookie-parser');
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const aiRoutes = require('./routes/aiRoutes');
+
+const dns = require("node:dns/promises");
+dns.setServers(["1.1.1.1", "1.0.0.1"]);
 
 // Load environment variables
 dotenv.config();
@@ -34,6 +37,7 @@ const app = express();
 
 // Security middleware - Helmet must be early
 app.use(helmet());
+app.use(cookieParser());
 
 app.use(cors({
     origin: true,
@@ -51,7 +55,7 @@ const generalLimiter = rateLimit({
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // Strict limit for auth endpoints
+    max: 50, // Strict limit for auth endpoints
     message: 'Too many login attempts from this IP, please try again after 15 minutes',
     skipSuccessfulRequests: true, // Don't count successful requests
 });
